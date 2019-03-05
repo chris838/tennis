@@ -21,11 +21,10 @@ env = make_env(environment_name)
 # Detect the number of agents (N)
 num_agents = env.n
 
-# We can't train until we have the required number of samples
-replay_buffer_size_min = batch_size * max_episode_len
-
 # Create the replay buffer
-replay_buffer = ReplayBuffer(maxlen=replay_buffer_size)
+min_samples_required = batch_size * max_episode_length
+replay_buffer = ReplayBuffer(
+    max_size=replay_buffer_size, min_samples_required=min_samples_required)
 
 # Create the agents
 agents = []
@@ -61,10 +60,9 @@ for episode in range(1, num_episodes):
         # Advance
         s = s_prime
 
-        # Periodically (after a certain number of steps) update/train the
-        # agents if we have enough samples in the replay buffer.
-        if len(replay_buffer) >= replay_buffer_size_min:
-            if train_step % train_every_steps == 0:
+        # Periodically (after a certain number of steps) run update/training
+        if train_step % train_every_steps == 0:
+            if replay_buffer.has_enough_samples():
 
                 # Sample replay buffer and update/train all the agents
                 sample = replay_buffer.sample(batch_size=)
