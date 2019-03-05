@@ -1,4 +1,4 @@
-import gym
+import gym, pdb
 from gym import spaces
 from gym.envs.registration import EnvSpec
 import numpy as np

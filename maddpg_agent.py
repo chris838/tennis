@@ -1,33 +1,40 @@
-import torch
+import torch, pdb
+import numpy as np
 
 class MaddpgAgent():
 
-    def __init__(self):
+    def __init__(self, i, state_space, action_space):
+
+        self.i = i
+        self.state_space = state_space
+        self.action_space = action_space
 
         # Initialize a random process N for action exploration
-        pass
+        # TODO
 
     def act(self, state, noise_level=0):
 
         # Select action:
         #    a = µ_θ (o) + N_t
         # w.r.t. the current policy and exploration noise
-        pass
+        # TODO
+
+        return np.random.random( self.action_space.n )
 
     def tensorise_sample(self, sample):
-        ss, as, rs, s_primes = zip(tuple(sample))
-        ss = torch.tensor(ss).float()
-        as = torch.tensor(as).float()
-        rs = torch.tensor(rs).float()
-        s_primes = torch.tensor(s_primes).float()
-        return (ss, as, rs, s_primes)
+        (s_s, a_s, r_s, s_prime_s) = zip(*tuple(sample))
+        s_s = torch.tensor(s_s).float()
+        a_s = torch.tensor(a_s).float()
+        r_s = torch.tensor(r_s).float()
+        s_prime_s = torch.tensor(s_prime_s).float()
+        return (s_s, a_s, r_s, s_prime_s)
 
     def update(self, sample, next_actions):
 
         # Unzip the list of sample tuples (s,a,r,s_prime) into seperate
         # tensors of each component.
-        (ss, as, rs, s_primes) = self.tensorise_sample(sample)
-        a_primes = torch.tensor(next_actions).float()
+        (s_s, a_s, r_s, s_prime_s) = self.tensorise_sample(sample)
+        a_prime_s = torch.tensor(next_actions).float()
 
         # For each sample, calculate the Q-value target y for this agent
         # specifically:
