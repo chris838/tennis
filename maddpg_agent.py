@@ -1,6 +1,6 @@
 
 
-class DpgAgent():
+class MaddpgAgent():
 
     def __init__(self):
 
