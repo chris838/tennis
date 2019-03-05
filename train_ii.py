@@ -17,7 +17,7 @@ noise_reduction = 0.9999
 # Create the agents
 agents = []
 for i in range(num_agents):
-    agents.append(DpgAgent(i,
+    agents.append(MaddpgAgent(i,
                            state_space=env.observation_space,
                            action_space=env.action_space))
 
