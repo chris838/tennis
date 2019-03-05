@@ -5,6 +5,8 @@ from mp_envs import make_env
 from replay_buffer import ReplayBuffer
 from maddpg_agent import MaddpgAgent
 
+# %%
+
 # Multi-Agent Deep Deterministic Policy Gradient for N agents
 
 # Config
@@ -99,3 +101,9 @@ for episode in range(1, num_episodes):
 
     if episode % 100 == 0:
         print(f"Average episode return over last 100 episodes: {np.mean(episode_rewards[-100:])}")
+
+
+# %%
+
+x = env.observation_space[0].shape[0]
+x

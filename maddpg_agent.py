@@ -1,13 +1,53 @@
 import torch, pdb
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
+
+class ActorNetwork(nn.Module):
+
+    def __init__(self, in_size, h1_size, h2_size, out_size):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(in_size, h1_size)
+        self.fc2 = nn.Linear(h1_size, h2_size)
+        self.fc3 = nn.Linear(h2_size, out_size)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
+        # x is a 2D vector (a force that is applied to the agent)
+        # We bound the norm of the vector to be between 0 and 10
+        norm = torch.norm(x)
+        if norm > 0:
+            return 10.0 * (f.tanh(norm)) * (x / norm)
+        else:
+            10 * x
+
+class CriticNetwork(nn.Module):
+
+    def __init__(self, in_size, h1_size, h2_size, out_size):
+        super(Net, self).__init__()
+        self.fc1 = nn.Linear(in_size, h1_size)
+        self.fc2 = nn.Linear(h1_size, h2_size)
+        self.fc3 = nn.Linear(h2_size, out_size)
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = self.fc3(x)
+
+        # Critic returns the q-value
+        return x
+
 
 class MaddpgAgent():
 
-    def __init__(self, i, state_space, action_space):
+    def __init__(self, i, state_space_size, action_space_size):
 
         self.i = i
-        self.state_space = state_space
-        self.action_space = action_space
+        self.actor  = ActorNetwork(state_space_size, 16, 8, 2)
+        self.critic = CriticNetwork(state_space_size + action_space_size, 16, 8, 1)
 
         # Initialize a random process N for action exploration
         # TODO
@@ -19,7 +59,7 @@ class MaddpgAgent():
         # w.r.t. the current policy and exploration noise
         # TODO
 
-        return np.random.random( self.action_space.n )
+        return np.random.random( self.action_space_size )
 
     def tensorise_sample(self, sample):
         (s_s, a_s, r_s, s_prime_s) = zip(*tuple(sample))
