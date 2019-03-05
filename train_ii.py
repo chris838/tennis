@@ -1,4 +1,5 @@
 import pdb
+import numpy as np
 
 from mp_envs import make_env
 from replay_buffer import ReplayBuffer
@@ -39,6 +40,9 @@ for i in range(num_agents):
     agents.append(MaddpgAgent(i, state_space=env.observation_space[0],
                                  action_space=env.action_space[0]))
 
+# Track progress
+episode_rewards = []
+
 # Iterate over episodes
 train_step = 0
 for episode in range(1, num_episodes):
@@ -47,6 +51,7 @@ for episode in range(1, num_episodes):
     #   s = (s_1, . . . , s_N)
     s = env.reset()
 
+    episode_rewards.append(0)
     for t in range(1, max_episode_length):
 
         # For each agent i, select actions:
@@ -63,6 +68,9 @@ for episode in range(1, num_episodes):
 
         # Store (s, a, r, s') in replay buffer D
         replay_buffer.append((s, a, r, s_prime))
+
+        # Record progress
+        episode_rewards[-1] += np.mean(r)
 
         # Advance
         s = s_prime
@@ -88,3 +96,6 @@ for episode in range(1, num_episodes):
                 # Update/train all the agents
                 for agent in agents:
                     agent.update(sample, next_actions)
+
+    if episode % 100 == 0:
+        print(f"Average episode return over last 100 episodes: {np.mean(episode_rewards[-100:])}")
