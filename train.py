@@ -110,8 +110,6 @@ def train(arglist):
         print('Starting iterations...')
         while True:
 
-            pdb.set_trace()
-
             # get action
             action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
             # environment step
