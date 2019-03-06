@@ -10,16 +10,16 @@ from maddpg_agent import MaddpgAgent
 # Multi-Agent Deep Deterministic Policy Gradient for N agents
 
 # Config
-num_episodes = 20000
+num_episodes = 5000
 batch_size = 1024  # how many episodes to process at once
 max_episode_length = 25
 environment_name = "simple"
 replay_buffer_size_max = int(1e6)
 train_every_steps = 100  # steps between training updates
 
-# Amplitude of OU noise, this slowly decreases to 0
-noise_level = 1
-noise_decay = 0.9999
+# Exploration factor, this slowly decreases to 0
+epsilon = 1.0
+epsilon_decay = 0.9999
 
 # Load the environment
 env = make_env(environment_name)
@@ -61,9 +61,9 @@ for episode in range(1, num_episodes):
         # For each agent i, select actions:
         #   a = (a_1, . . . , a_N)
         # using the current policy and exploration noise, which we decay
-        a = [agent.act(state, noise_level=noise_level)
+        a = [agent.act(state, epsilon=epsilon)
              for agent, state in zip(agents, s)]
-        noise_level *= noise_decay
+        epsilon *= epsilon_decay
 
         # Execute actions a = (a_1, . . . , a_N)
         # Observe:
@@ -92,7 +92,7 @@ for episode in range(1, num_episodes):
                 # would be chosen under the policy of the other agents in the
                 # next state s', in order to calculate q-values.
                 next_actions = [[
-                     agent.act(next_state)
+                     agent.act(next_state, target_actor=True)
                      for agent, next_state in zip(agents, s_prime)]
                     for (s, a, r, s_prime) in sample]
 
