@@ -13,7 +13,7 @@ from maddpg_agent import MaddpgAgent
 num_episodes = 5000
 batch_size = 1024  # how many episodes to process at once
 max_episode_length = 25
-environment_name = "simple"
+environment_name = "simple_adversary"
 replay_buffer_size_max = int(1e6)
 train_every_steps = 100  # steps between training updates
 
@@ -24,10 +24,20 @@ epsilon_decay = 0.9999
 # Load the environment
 env = make_env(environment_name)
 num_agents = env.n
-state_space_size = env.observation_space[0].shape[0]
-action_space_size = env.action_space[0].shape[0]
 print(f"Environment has {num_agents} agents")
-print(f"State space: {state_space_size}; Action space {action_space_size}.")
+
+# Create the agents
+agents = []
+global_state_space_size = sum([o.shape[0] for o in env.observation_space])
+global_action_space_size = sum([a.shape[0] for a in env.action_space])
+for i in range(num_agents):
+    state_space_size = env.observation_space[i].shape[0]
+    action_space_size = env.action_space[i].shape[0]
+    print(f"Agent {i}: state space: {state_space_size}; \
+            action space {action_space_size}.")
+    agents.append(MaddpgAgent(
+        i, num_agents, state_space_size, action_space_size,
+        global_state_space_size, global_action_space_size))
 
 # Don't start learning until we have more episodes recorded than we need
 # samples to fill our batch (i.e. we're only taking on average 1-2 samples from
@@ -37,12 +47,6 @@ min_samples_required = batch_size * max_episode_length
 # Create the replay buffer
 replay_buffer = ReplayBuffer(
     max_size=replay_buffer_size_max, min_samples_required=min_samples_required)
-
-# Create the agents
-agents = []
-for i in range(num_agents):
-    agents.append(MaddpgAgent(
-        i, num_agents, state_space_size, action_space_size))
 
 # Track progress
 episode_rewards = []
@@ -55,7 +59,8 @@ for episode in range(1, num_episodes):
     #   s = (s_1, . . . , s_N)
     s = env.reset()
 
-    episode_rewards.append(0)
+
+    episode_rewards.append( np.array( [0] * num_agents) )
     for t in range(1, max_episode_length):
 
         # For each agent i, select actions:
@@ -75,7 +80,7 @@ for episode in range(1, num_episodes):
         replay_buffer.append((s, a, r, s_prime))
 
         # Record progress
-        episode_rewards[-1] += np.mean(r)
+        episode_rewards[-1] = episode_rewards[-1] + r
 
         # Advance
         s = s_prime
@@ -102,4 +107,4 @@ for episode in range(1, num_episodes):
 
     if episode % 100 == 0:
         print(f"Average episode return over last 100 episodes: \
-        {np.mean(episode_rewards[-100:])}")
+        {np.array(episode_rewards[-100:]).mean(axis=0)}")
