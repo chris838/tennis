@@ -63,17 +63,17 @@ class MaddpgAgent():
         # The actor's policy maps the agent's local state observation
         # directly to an action vector, as per a deterministic policy.
         self.actor  = ActorNetwork(
-            state_space_size, 64, 32, 2)
+            state_space_size, 128, 128, 2)
         self.actor_target  = ActorNetwork(
-            state_space_size, 64, 32, 2)
+            state_space_size, 128, 128, 2)
 
         # Each agent has its own critic, but each critic takes in the global
         # state and action vectors (for all agents) to predict a corresponding
         # Q-value estimate.
         self.critic = CriticNetwork(
-            global_state_space_size + global_action_space_size, 128, 64, 1)
+            global_state_space_size + global_action_space_size, 128, 128, 1)
         self.critic_target = CriticNetwork(
-            global_state_space_size + global_action_space_size, 128, 64, 1)
+            global_state_space_size + global_action_space_size, 128, 128, 1)
 
         self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)
@@ -94,10 +94,14 @@ class MaddpgAgent():
             else:
                 action = self.actor(state_tensor)
 
-        # TODO - add noise
+            # Squeeze to undo the previous unsqueeze
+            action = action.squeeze(0).detach().numpy()
 
-        # Squeeze to undo the previous unsqueeze
-        return action.squeeze(0).detach().numpy()
+        # Add gaussian exploration noise
+        noise = np.random.normal(0, 0.5, action.shape)
+        action = np.mean([(1-epsilon)*action, epsilon*noise], axis=0)
+
+        return action
 
 
     def update(self, sample, next_actions):
