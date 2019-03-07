@@ -57,23 +57,23 @@ class MaddpgAgent():
         self.lr = 0.01
 
         # Create the ANN models. We use target networks to make predictions
-        # and apply updates to local networks, which are then soft-updated
+        # and apply updates to local networks. We then soft-update target
         # from the local networks over time. This helps stabilise learning.
 
         # The actor's policy maps the agent's local state observation
         # directly to an action vector, as per a deterministic policy.
         self.actor  = ActorNetwork(
-            state_space_size, 16, 8, 2)
+            state_space_size, 64, 32, 2)
         self.actor_target  = ActorNetwork(
-            state_space_size, 16, 8, 2)
+            state_space_size, 64, 32, 2)
 
         # Each agent has its own critic, but each critic takes in the global
         # state and action vectors (for all agents) to predict a corresponding
         # Q-value estimate.
         self.critic = CriticNetwork(
-            global_state_space_size + global_action_space_size, 16, 8, 1)
+            global_state_space_size + global_action_space_size, 128, 64, 1)
         self.critic_target = CriticNetwork(
-            global_state_space_size + global_action_space_size, 16, 8, 1)
+            global_state_space_size + global_action_space_size, 128, 64, 1)
 
         self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)

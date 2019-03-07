@@ -16,8 +16,6 @@ max_episode_length = 25
 environment_name = "simple_adversary"
 replay_buffer_size_max = int(1e6)
 train_every_steps = 100  # steps between training updates
-
-# Exploration factor, this slowly decreases to 0
 epsilon = 1.0
 epsilon_decay = 0.9999
 
