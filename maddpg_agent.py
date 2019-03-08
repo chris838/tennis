@@ -2,7 +2,10 @@ import torch, pdb
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
+from torch.nn.utils import clip_grad_norm_
 import numpy as np
+
+from ou_noise import OUNoise
 
 class ActorNetwork(nn.Module):
 
@@ -17,11 +20,12 @@ class ActorNetwork(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
 
-        # x is a 2D vector (a force that is applied to the agent)
-        # We bound the norm of the vector to be between 0 and 1
-        norm = torch.norm(x)
-        if norm > 0: return (x / norm)
-        else:        return  x
+        # We adjust the vector so that it sits within the unit square,
+        # without changing it's direction.
+        to_unit_square = torch.abs(x).max()
+        scale = torch.tanh(torch.norm(x))
+        if to_unit_square > 0: return scale * (x / to_unit_square)
+        else:                  return x
 
 class CriticNetwork(nn.Module):
 
@@ -63,9 +67,9 @@ class MaddpgAgent():
         # The actor's policy maps the agent's local state observation
         # directly to an action vector, as per a deterministic policy.
         self.actor  = ActorNetwork(
-            state_space_size, 128, 128, 2)
+            state_space_size, 128, 128, action_space_size)
         self.actor_target  = ActorNetwork(
-            state_space_size, 128, 128, 2)
+            state_space_size, 128, 128, action_space_size)
 
         # Each agent has its own critic, but each critic takes in the global
         # state and action vectors (for all agents) to predict a corresponding
@@ -78,8 +82,10 @@ class MaddpgAgent():
         self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)
 
+        # Initialise OU process for exploration noise
+        self.noise = OUNoise(action_space_size, scale=2.0 )
 
-    def act(self, state, epsilon=0, target_actor=False):
+    def act(self, state, noise_level=0, target_actor=False):
 
         # Select action:
         #    a = µ_θ (o) + N_t
@@ -87,35 +93,36 @@ class MaddpgAgent():
         with torch.no_grad():
 
             # Unsqueeze to create a batch of 1
-            state_tensor = torch.from_numpy(state).float().unsqueeze(0)
+            state = torch.from_numpy(state).float().unsqueeze(0)
 
             if target_actor:
-                action = self.actor_target(state_tensor)
+                action = self.actor_target(state)
             else:
-                action = self.actor(state_tensor)
+                action = self.actor(state)
 
-            # Squeeze to undo the previous unsqueeze
             action = action.squeeze(0).detach().numpy()
 
-        # Add gaussian exploration noise
-        noise = np.random.normal(0, 0.5, action.shape)
-        action = np.mean([(1-epsilon)*action, epsilon*noise], axis=0)
-
+        # Add OU exploration noise and clip
+        action = (1 - noise_level)*action + noise_level*self.noise.noise()
         return action
 
-
     def update(self, sample, next_actions):
+
+        self.sample = sample
+        self.next_actions = next_actions
 
         # Create tensors from the sample tuples corresponding next actions.
         (s, a, r, s_prime, a_prime) = self.tensorise_sample(sample, next_actions)
 
         # Update the local actor/critic networks
-        self.update_critic(s, a, r, s_prime, a_prime)
-        self.update_actor(s, a, r, s_prime, a_prime)
+        actor_loss = self.update_critic(s, a, r, s_prime, a_prime)
+        critic_loss = self.update_actor(s, a, r, s_prime, a_prime)
 
         # Soft update the target actor/critic networks
         self.soft_update(self.critic_target, self.critic, self.tau)
         self.soft_update(self.actor_target, self.actor, self.tau)
+
+        return (actor_loss, critic_loss)
 
 
     def tensorise_sample(self, sample, next_actions):
@@ -155,20 +162,27 @@ class MaddpgAgent():
         #   y = r_i + γ * Q_i(x'_1, ... , x'_N, a'_1, ... , a'_N) | a'_k = µ'_k(o_k)
         next_states = s_prime.requires_grad_(False)
         next_actions = a_prime.requires_grad_(False)
-        y = r + self.discount * self.critic_target(next_states, next_actions)
+        next_q_values = self.critic_target(next_states, next_actions)
+        this_agent_reward = r[:, self.i].unsqueeze(1)
+        y = this_agent_reward + self.discount * next_q_values
+
+        # For each sample, calculate the Q-value prediction for this agent i
+        #   y_hat = Q_i(s_1, ... , s_N, a_1, ... , a_N)
+        states = s.requires_grad_(True)
+        actions = a.requires_grad_(True)
+        y_hat = self.critic(states, actions)
 
         # Calculate the critic loss for this agent i. For each sample tuple,
         # this is given by:
-        #   L(θ_i) = (y − Q_i(s_1, ... , s_N, a_1, ... , a_N))^2
-        # We then average this squared error term over all the sample tuples
-        # (i.e. we calculate the MSE loss over the sample)
-        states = s.requires_grad_(True)
-        actions = a.requires_grad_(True)
-        critic_loss = F.mse_loss(y.detach(), self.critic(states, actions))
+        #   L(θ_i) = (y − y_hat)^2
+        critic_loss = F.mse_loss(y.detach(), y_hat)
 
         # Optimise
         critic_loss.backward()
+        #clip_grad_norm_(self.critic.parameters(), 0.5)
         self.critic_optimiser.step()
+
+        return critic_loss.detach().numpy()
 
 
     def update_actor(self, s, a, r, s_prime, a_prime):
@@ -204,7 +218,10 @@ class MaddpgAgent():
 
         # Optimise
         actor_loss.backward()
+        #clip_grad_norm_(self.actor.parameters(), 0.5)
         self.actor_optimiser.step()
+
+        return actor_loss.detach().numpy()
 
 
     def soft_update(self, target, source, tau):
