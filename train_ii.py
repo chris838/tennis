@@ -16,8 +16,8 @@ max_episode_length = 25
 environment_name = "simple_adversary"
 replay_buffer_size_max = int(1e6)
 train_every_steps = 100  # steps between training updates
-epsilon = 1.0
-epsilon_decay = 0.9999
+noise_level = 1.0
+noise_decay = 0.9999
 
 # Load the environment
 env = make_env(environment_name)
@@ -51,12 +51,12 @@ episode_rewards = []
 
 # Iterate over episodes
 train_step = 0
+is_learning = False
 for episode in range(1, num_episodes):
 
     # Receive initial state vector s
     #   s = (s_1, . . . , s_N)
     s = env.reset()
-
 
     episode_rewards.append( np.array( [0] * num_agents) )
     for t in range(1, max_episode_length):
@@ -64,9 +64,10 @@ for episode in range(1, num_episodes):
         # For each agent i, select actions:
         #   a = (a_1, . . . , a_N)
         # using the current policy and exploration noise, which we decay
-        a = [agent.act(state, epsilon=epsilon)
+        a = [agent.act(state, noise_level=noise_level)
              for agent, state in zip(agents, s)]
-        epsilon *= epsilon_decay
+        if is_learning:
+            noise_level *= noise_decay
 
         # Execute actions a = (a_1, . . . , a_N)
         # Observe:
@@ -88,6 +89,10 @@ for episode in range(1, num_episodes):
         if train_step % train_every_steps == 0:
             if replay_buffer.has_enough_samples():
 
+                if not is_learning:
+                    print(f"Started learning at time {train_step}")
+                    is_learning = True
+
                 # Sample replay buffer
                 sample = replay_buffer.sample(batch_size=batch_size)
 
@@ -104,5 +109,7 @@ for episode in range(1, num_episodes):
                     agent.update(sample, next_actions)
 
     if episode % 100 == 0:
-        print(f"Average episode return over last 100 episodes: \
+        print(f"t: {train_step}, e: {episode}, noise: {noise_level:.2f}. Average last 100 episode return: \
         {np.array(episode_rewards[-100:]).mean(axis=0)}")
+
+print(f"Final average reward over entire run: {np.mean(episode_rewards)}")

@@ -22,10 +22,10 @@ class ActorNetwork(nn.Module):
 
         # We adjust the vector so that it sits within the unit square,
         # without changing it's direction.
-        to_unit_square = torch.abs(x).max()
-        scale = torch.tanh(torch.norm(x))
-        if to_unit_square > 0: return scale * (x / to_unit_square)
-        else:                  return x
+        to_unit_square, _ = torch.abs(x).max(dim=1, keepdim=True)
+        to_unit_square[to_unit_square == 0] = 1.0 # prevent div by zero
+        scale = torch.tanh(torch.norm(x, dim=1, keepdim=True))
+        return scale * (x / to_unit_square)
 
 class CriticNetwork(nn.Module):
 
@@ -56,7 +56,7 @@ class MaddpgAgent():
         self.state_space_size = state_space_size
         self.action_space_size = action_space_size
 
-        self.discount = 0.95
+        self.discount = 1.0
         self.tau = 0.01
         self.lr = 0.01
 
@@ -83,7 +83,7 @@ class MaddpgAgent():
         self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)
 
         # Initialise OU process for exploration noise
-        self.noise = OUNoise(action_space_size, scale=2.0 )
+        self.noise = OUNoise(action_space_size, scale=1.0)
 
     def act(self, state, noise_level=0, target_actor=False):
 
@@ -102,8 +102,9 @@ class MaddpgAgent():
 
             action = action.squeeze(0).detach().numpy()
 
-        # Add OU exploration noise and clip
-        action = (1 - noise_level)*action + noise_level*self.noise.noise()
+        # Add OU exploration noise
+        noise = self.noise.noise()
+        action = (1-noise_level)*action + noise_level*noise
         return action
 
     def update(self, sample, next_actions):
@@ -112,11 +113,11 @@ class MaddpgAgent():
         self.next_actions = next_actions
 
         # Create tensors from the sample tuples corresponding next actions.
-        (s, a, r, s_prime, a_prime) = self.tensorise_sample(sample, next_actions)
+        (s, a, r, s_prime, a_prime, dones) = self.tensorise_sample(sample, next_actions)
 
         # Update the local actor/critic networks
-        actor_loss = self.update_critic(s, a, r, s_prime, a_prime)
-        critic_loss = self.update_actor(s, a, r, s_prime, a_prime)
+        actor_loss = self.update_critic(s, a, r, s_prime, a_prime, dones)
+        critic_loss = self.update_actor(s, a, r, s_prime, a_prime, dones)
 
         # Soft update the target actor/critic networks
         self.soft_update(self.critic_target, self.critic, self.tau)
@@ -130,7 +131,7 @@ class MaddpgAgent():
         # Unzip the list of sample tuples (s,a,r,s_prime) into seperate
         # list of each component. Each of these variables is a list,
         # where the first dimension is the sample dimension.
-        (s, a, r, s_prime) = zip(*tuple(sample))
+        (s, a, r, s_prime, dones) = zip(*tuple(sample))
 
         # Create flattened tensors of all other agents states/next states
         # and also of all other agents actions/next actions. This has to
@@ -150,13 +151,19 @@ class MaddpgAgent():
         r = torch.tensor(r).float()
         s_prime_roll_flat = torch.tensor(roll_flat(s_prime)).float()
         a_prime_roll_flat = torch.tensor(roll_flat(next_actions)).float()
+        dones = torch.tensor(dones).float()
 
-        return (s_roll_flat, a_roll_flat, r, s_prime_roll_flat, a_prime_roll_flat)
+        return (s_roll_flat,
+                a_roll_flat,
+                r,
+                s_prime_roll_flat,
+                a_prime_roll_flat,
+                dones)
 
 
-    def update_critic(self, s, a, r, s_prime, a_prime):
+    def update_critic(self, s, a, r, s_prime, a_prime, dones):
 
-        self.critic.zero_grad()
+        self.critic_optimiser.zero_grad()
 
         # For each sample, calculate the Q-value target, y, for this agent i.
         #   y = r_i + γ * Q_i(x'_1, ... , x'_N, a'_1, ... , a'_N) | a'_k = µ'_k(o_k)
@@ -164,7 +171,8 @@ class MaddpgAgent():
         next_actions = a_prime.requires_grad_(False)
         next_q_values = self.critic_target(next_states, next_actions)
         this_agent_reward = r[:, self.i].unsqueeze(1)
-        y = this_agent_reward + self.discount * next_q_values
+        this_agent_done = dones[:, self.i].unsqueeze(1)
+        y = this_agent_reward + (self.discount * next_q_values * (1-this_agent_done))
 
         # For each sample, calculate the Q-value prediction for this agent i
         #   y_hat = Q_i(s_1, ... , s_N, a_1, ... , a_N)
@@ -174,8 +182,8 @@ class MaddpgAgent():
 
         # Calculate the critic loss for this agent i. For each sample tuple,
         # this is given by:
-        #   L(θ_i) = (y − y_hat)^2
-        critic_loss = F.mse_loss(y.detach(), y_hat)
+        #   L(θ_i) = (y_hat - y)^2
+        critic_loss = F.mse_loss(y_hat, y.detach())
 
         # Optimise
         critic_loss.backward()
@@ -185,10 +193,9 @@ class MaddpgAgent():
         return critic_loss.detach().numpy()
 
 
-    def update_actor(self, s, a, r, s_prime, a_prime):
+    def update_actor(self, s, a, r, s_prime, a_prime, dones):
 
-        self.actor.zero_grad()
-        self.critic.zero_grad()
+        self.actor_optimiser.zero_grad()
 
         # First, apply the policy to determine the action(s) for all tuples in
         # the sample, for this agent i only, making sure we track the gradients.
@@ -212,9 +219,7 @@ class MaddpgAgent():
         # so it's important we track this. The loss is then averaged over all
         # the sample tuples. We also multiply by -1 since otherwise we have
         # defined the actor's performance, instead of the actor's loss.
-        states = s.requires_grad_(True)
-        actions = a_modified.requires_grad_(True)
-        actor_loss = -1 * self.critic(states, actions).mean()
+        actor_loss = -1 * self.critic(s, a_modified).mean()
 
         # Optimise
         actor_loss.backward()
@@ -225,7 +230,7 @@ class MaddpgAgent():
 
 
     def soft_update(self, target, source, tau):
-        for target_param, param in zip(target.parameters(), source.parameters()):
+        for target_param, source_param in zip(target.parameters(), source.parameters()):
             target_param.data.copy_(
-                target_param.data * (1.0 - tau) + param.data * tau
+                target_param.data * (1.0 - tau) + source_param.data * tau
             )

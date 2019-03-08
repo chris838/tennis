@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 
 # from https://github.com/songrotek/DDPG/blob/master/ou_noise.py
@@ -21,4 +20,4 @@ class OUNoise:
         x = self.state
         dx = self.theta * (self.mu - x) + self.sigma * np.random.randn(len(x))
         self.state = x + dx
-        return torch.tensor(self.state * self.scale).float()
+        return self.state * self.scale
