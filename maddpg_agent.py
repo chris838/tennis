@@ -20,12 +20,14 @@ class ActorNetwork(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
 
+        return torch.tanh(x)
+
         # We adjust the vector so that it sits within the unit square,
         # without changing it's direction.
-        to_unit_square, _ = torch.abs(x).max(dim=1, keepdim=True)
-        to_unit_square[to_unit_square == 0] = 1.0 # prevent div by zero
-        scale = torch.tanh(torch.norm(x, dim=1, keepdim=True))
-        return scale * (x / to_unit_square)
+        #to_unit_square, _ = torch.abs(x).max(dim=1, keepdim=True)
+        #to_unit_square[to_unit_square == 0] = 1.0 # prevent div by zero
+        #scale = torch.tanh(torch.norm(x, dim=1, keepdim=True))
+        #return scale * (x / to_unit_square)
 
 class CriticNetwork(nn.Module):
 
@@ -56,9 +58,9 @@ class MaddpgAgent():
         self.state_space_size = state_space_size
         self.action_space_size = action_space_size
 
-        self.discount = 1.0
+        self.discount = 0.99
         self.tau = 0.01
-        self.lr = 0.01
+        self.lr = 3e-4
 
         # Create the ANN models. We use target networks to make predictions
         # and apply updates to local networks. We then soft-update target
@@ -67,23 +69,23 @@ class MaddpgAgent():
         # The actor's policy maps the agent's local state observation
         # directly to an action vector, as per a deterministic policy.
         self.actor  = ActorNetwork(
-            state_space_size, 128, 128, action_space_size)
+            state_space_size, 512, 512, action_space_size)
         self.actor_target  = ActorNetwork(
-            state_space_size, 128, 128, action_space_size)
+            state_space_size, 512, 512, action_space_size)
 
         # Each agent has its own critic, but each critic takes in the global
         # state and action vectors (for all agents) to predict a corresponding
         # Q-value estimate.
         self.critic = CriticNetwork(
-            global_state_space_size + global_action_space_size, 128, 128, 1)
+            global_state_space_size + global_action_space_size, 512, 512, 1)
         self.critic_target = CriticNetwork(
-            global_state_space_size + global_action_space_size, 128, 128, 1)
+            global_state_space_size + global_action_space_size, 512, 512, 1)
 
         self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.lr)
         self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)
 
         # Initialise OU process for exploration noise
-        self.noise = OUNoise(action_space_size, scale=1.0)
+        self.noise = OUNoise(action_space_size, scale=0.5)
 
     def act(self, state, noise_level=0, target_actor=False):
 
