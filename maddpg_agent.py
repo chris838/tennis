@@ -60,7 +60,8 @@ class MaddpgAgent():
 
         self.discount = 0.99
         self.tau = 0.01
-        self.lr = 3e-4
+        self.actor_lr = 1e-4
+        self.critic_lr = 3e-4
 
         # Create the ANN models. We use target networks to make predictions
         # and apply updates to local networks. We then soft-update target
@@ -69,9 +70,9 @@ class MaddpgAgent():
         # The actor's policy maps the agent's local state observation
         # directly to an action vector, as per a deterministic policy.
         self.actor  = ActorNetwork(
-            state_space_size, 512, 512, action_space_size)
+            state_space_size, 512, 256, action_space_size)
         self.actor_target  = ActorNetwork(
-            state_space_size, 512, 512, action_space_size)
+            state_space_size, 512, 256, action_space_size)
 
         # Each agent has its own critic, but each critic takes in the global
         # state and action vectors (for all agents) to predict a corresponding
@@ -81,11 +82,11 @@ class MaddpgAgent():
         self.critic_target = CriticNetwork(
             global_state_space_size + global_action_space_size, 512, 512, 1)
 
-        self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.lr)
-        self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.lr)
+        self.actor_optimiser    = Adam(self.actor.parameters(), lr=self.actor_lr)
+        self.critic_optimiser   = Adam(self.critic.parameters(), lr=self.critic_lr)
 
         # Initialise OU process for exploration noise
-        self.noise = OUNoise(action_space_size, scale=0.5)
+        self.noise = OUNoise(action_space_size, scale=1.0)
 
     def act(self, state, noise_level=0, target_actor=False):
 
