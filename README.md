@@ -1,6 +1,6 @@
 # Solving Tennis using Multi-Agent Deep Deterministic Policy Gradients
 
-This project attempts to solve the reinforcement learning test environment "Tennis", which simulates a simplified game of table tennis, using MADDPG (Multi-Agent Deep Deterministic Policy Gradients) [Lowe et al](https://arxiv.org/abs/1706.02275).
+This project attempts to solve the reinforcement learning test environment "Tennis", which simulates a simplified game of table tennis, using MADDPG (Multi-Agent Deep Deterministic Policy Gradients [[Lowe et al](https://arxiv.org/abs/1706.02275)]).
 
 
 ## Description
@@ -14,9 +14,9 @@ The task is episodic, and in order to solve the environment, the agents must get
 
 ## Installation
 
-### Install deep reinforcement learning repository
+### Install Deep Reinforcement Learning Repository
 
-1. Clone [deep reinforcement learning repository](https://github.com/udacity/deep-reinforcement-learning)
+1. Clone [Deep Reinforcement Learning Repository](https://github.com/udacity/deep-reinforcement-learning)
 2. Follow the instructions to install necessary [dependencies](https://github.com/udacity/deep-reinforcement-learning#dependencies)
 
 
@@ -38,7 +38,7 @@ The task is episodic, and in order to solve the environment, the agents must get
 1. Start the jupyter server by running `jupyter notebook`
 2. Open the `MADDPG_Tennis_Multi_Agent.ipynb` notebook
 3. Change the kernel to `drlnd`
-4. You should be able to run all the cells
+4. Follow instructions in the notebook to either load an existing agent train a new one.
 
 
 ## Weights
