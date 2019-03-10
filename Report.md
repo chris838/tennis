@@ -46,12 +46,12 @@ Below is the summary for the actor/policy network. On the hidden layers we use t
     ----------------------------------------------------------------
             Layer (type)               Output Shape         Param #
     ================================================================
-                Linear-1                   [-1, 32]           1,088
-                Linear-2                   [-1, 32]           1,056
-                Linear-3                    [-1, 4]             132
+                Linear-1                  [-1, 512]          12,800
+                Linear-2                  [-1, 256]         131,328
+                Linear-3                    [-1, 2]             514
     ================================================================
-    Total params: 2,276
-    Trainable params: 2,276
+    Total params: 144,642
+    Trainable params: 144,642
     Non-trainable params: 0
     ----------------------------------------------------------------
 
@@ -60,21 +60,23 @@ Below is the summary for the critic/value network. Again we use `ReLU` on the hi
     ----------------------------------------------------------------
             Layer (type)               Output Shape         Param #
     ================================================================
-                Linear-1                   [-1, 32]           1,088
-                Linear-2                   [-1, 32]           1,056
-                Linear-3                    [-1, 1]              33
+                Linear-1                  [-1, 512]          27,136
+                Linear-2                  [-1, 256]         131,328
+                Linear-3                    [-1, 1]             257
     ================================================================
-    Total params: 2,177
-    Trainable params: 2,177
+    Total params: 158,721
+    Trainable params: 158,721
     Non-trainable params: 0
     ----------------------------------------------------------------
 
 
 ## Plot of Rewards
 
-As required, the agent is able to receive an average maximum reward (over 100 episodes) of at least 0.5. This is reached after just 173 episodes.
+As required, the agent is able to receive an average maximum reward (over 100 episodes) of at least 0.5. This is reached after 10,450 episodes.
 
-![Reward Graph of PPO](https://github.com/chris838/reacher/blob/master/ppo-reacher.png)
+![Reward Graph of MADDPG](https://github.com/chris838/tennis/blob/master/maddpg-tennis-returns.png)
+
+![Loss Graph of MADDPG](https://github.com/chris838/tennis/blob/master/maddpg-tennis-loss.png)
 
 
 ## Ideas for Future Work
