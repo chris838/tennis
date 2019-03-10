@@ -20,6 +20,8 @@ Each agent maintains its own individual actor and critic model. Each agent's act
 
 Q-values are calculated in a similar fashion to Q-learning (see [Deep Q-Networks](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) for details). Given an experience tuple $(s, a, r, s')$ harvested from $n$ agent's interactions with their environment, the target Q-value for agent $i$ is calculated as follows:
 
+<a href="https://www.codecogs.com/eqnedit.php?latex=Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;μ_i(s{'}_1),...,μ_i(s{'}_n))" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;μ_i(s{'}_1),...,μ_i(s{'}_n))" title="Q_{target}(s_1,...,s_n, a_1,...,a_n) = r_i + \gamma Q(s{'}_1,...,s{'}_n, μ_i(s{'}_1),...,μ_i(s{'}_n))" /></a>
+
 $$
 Q_{target}(s_1,...,s_n, a_1,...,a_n) = r_i + \gamma Q(s{'}_1,...,s{'}_n, μ_i(s{'}_1),...,μ_i(s{'}_n))
 $$
