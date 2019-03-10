@@ -26,15 +26,15 @@ $$
 
 Where the subscript $i$ indicates the component that corresponds to agent $i$ only, $μ_i$ is the policy for agent $i$, and $\gamma$ is a discount factor. Q-values are then updated by minimising the mean-squared error between target and predicted Q-values.
 
-Each agent individually measures the performance of its policy as follows:
+Each agent $i$ individually measures the performance of its policy $μ_i$ as follows:
 
 $$
 J_{μ_i} = Q(s_1,...,s_i,...,s_n, a_1,...,μ_i(s_i),...,a_n)
 $$
 
-The policy is improved by maximising this term.
+Policies are updated by maximising this term.
 
-We use neural networks to represent both actor and critic and train them using Adam optimisation. We also use two additional ideas from the [Deep Q-Networks](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) paper and also recommended in the [MADDPG](https://arxiv.org/pdf/1706.02275.pdf) paper. Firstly, we use a replay buffer to collect samples and then training on random batches from this replay buffer. Secondly, we maintain separate target actor and critic networks for calculating target values. We then soft-update these target networks over time, which leads to more stable learning.
+We use neural networks to represent both actor and critic and train them using Adam optimisation. We also use two additional ideas from the [Deep Q-Networks](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) paper, as recommended in the [MADDPG](https://arxiv.org/pdf/1706.02275.pdf) paper. Firstly, we use a replay buffer to collect samples and then train on random batches from this replay buffer. Secondly, we maintain separate target actor and critic networks for calculating target values. We then soft-update these target networks over time, which leads to more stable learning.
 
 
 # Neural network architecture
@@ -81,24 +81,26 @@ As required, the agent is able to receive an average maximum reward (over 100 ep
 
 The most difficult aspect of this project was finding the right hyperparameters that would provide good performance. Initially, we started with the parameters provided in the original MADDPG paper, but the proved to perform poorly. By reducing the learning rate and increasing the training frequency, as well as training for more episodes, we eventually found a working solution.
 
-Given how long the algorithm takes to converge and how sensitive it is to certain parameters, it seems highly likely that significant improvement could be made by exploring different parameter settings. This search proved time consuming, however, given that even our most successful training attempts showed no improvement until after several thousand episodes of seemingly degenerate behaviour.
+Given how long the algorithm takes to converge and how sensitive it is to certain parameters, it seems highly likely that significant improvement could be made by exploring different parameter settings. Exploring the search space would be time consuming, however, given that even our most successful training attempts showed no improvement until after several thousand episodes of seemingly degenerate behaviour.
 
-Therefore, it would seem prudent to find a method of assessing training progress that goes beyond just looking at cumulative reward and actor/critic loss, so that we can try and improve training efficiency without spending hours waiting for results. Installing and configuring a utility like 'tensorboardX' would likely be the easiest way of doing this.
+Therefore, it would seem prudent to find a method of assessing training progress that goes beyond just looking at cumulative reward and actor/critic loss, so that we can try and improve training efficiency without spending hours waiting for results. One example would be to look at gradient norms over time. Installing and configuring a utility like 'tensorboardX' would likely be the easiest way of doing this.
 
-Beyond tweaking parameters, we might also consider using prioritised replay. Clearly, many of the episodes our agent experiences contain little information, in particular when the agent fails to hit the ball at all. In contrast, some episodes are highly information - a back-and-forth rally can occasionally be seen when watching random agents play.
+Beyond tweaking parameters, we might also consider using prioritised replay. Clearly, many of the episodes our agent experiences contain little information, in particular when the agent fails to hit the ball at all (which is sadly the vast majority of early, non-random episodes). In contrast, some episodes are highly informative - a back-and-forth rally of two can occasionally be seen when watching random agents play.
+
+A final suggestion would be to try using a technique such as batch-normalisation, which might allow us to increase the learning rate and speed up training.
 
 
 # Hyperparameters
 
-    | Hyper-parameter Name 	  | Value 	|
-    |-------------------------|---------|
-    | Adam learning rate  	  | 3e-4  	|
-    | Discount (gamma)    	  | 0.99  	|
-    | Soft-update (tau)       | 0.01    |
-    | Batch size              | 512     |
-    | Max. episode length     | 2000    |
-    | Replay buffer min size  | 20480   |
-    | Replay buffer max size  | 1000000 |
-    | Train every # steps     | 4       |
-    | Noise start level       | 1.0     |
-    | Noise decay rate        | 0.9999  |
+    | Hyper-parameter Name 	   | Value 	 |
+    |--------------------------|---------|
+    | Adam learning rate  	   | 3e-4  	 |
+    | Discount (gamma)    	   | 0.99  	 |
+    | Soft-update (tau)        | 0.01    |
+    | Batch size               | 512     |
+    | Max. episode length      | 2000    |
+    | Replay buffer min size   | 20480   |
+    | Replay buffer max size   | 1000000 |
+    | Train every # steps      | 4       |
+    | Explore factor (epsilon) | 1.0     |
+    | Noise decay rate         | 0.9999  |
