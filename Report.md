@@ -18,21 +18,15 @@ However, this is also a multi-agent environment. If we were to train DDPG indivi
 
 Each agent maintains its own individual actor and critic model. Each agent's actor is a deterministic policy that maps from the agent's individual state observations to an individual action for that same agent. However, each agent's critic calculates action values, or Q-values, based on the global state/action space. In this way, the policy and actions of an agent's opponent are no longer a part of their environment, and the value of an agent's own state and action is assessed within in the context of the states and action choices of its peers, and not in isolation.
 
-Q-values are calculated in a similar fashion to Q-learning (see [Deep Q-Networks](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) for details). Given an experience tuple $(s, a, r, s')$ harvested from $n$ agent's interactions with their environment, the target Q-value for agent $i$ is calculated as follows:
+Q-values are calculated in a similar fashion to Q-learning (see [Deep Q-Networks](https://storage.googleapis.com/deepmind-media/dqn/DQNNaturePaper.pdf) for details). Given an experience tuple *(s, a, r, s')* harvested from *n* agent's interactions with their environment, the target Q-value for agent *i* is calculated as follows:
 
-<a href="https://www.codecogs.com/eqnedit.php?latex=Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;μ_i(s{'}_1),...,μ_i(s{'}_n))" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;μ_i(s{'}_1),...,μ_i(s{'}_n))" title="Q_{target}(s_1,...,s_n, a_1,...,a_n) = r_i + \gamma Q(s{'}_1,...,s{'}_n, μ_i(s{'}_1),...,μ_i(s{'}_n))" /></a>
+<a href="https://www.codecogs.com/eqnedit.php?latex=Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;\mu_i(s{'}_1),...,\mu_i(s{'}_n))" target="_blank"><img src="https://latex.codecogs.com/gif.latex?Q_{target}(s_1,...,s_n,&space;a_1,...,a_n)&space;=&space;r_i&space;&plus;&space;\gamma&space;Q(s{'}_1,...,s{'}_n,&space;\mu_i(s{'}_1),...,\mu_i(s{'}_n))" title="Q_{target}(s_1,...,s_n, a_1,...,a_n) = r_i + \gamma Q(s{'}_1,...,s{'}_n, \mu_i(s{'}_1),...,\mu_i(s{'}_n))" /></a>
 
-$$
-Q_{target}(s_1,...,s_n, a_1,...,a_n) = r_i + \gamma Q(s{'}_1,...,s{'}_n, μ_i(s{'}_1),...,μ_i(s{'}_n))
-$$
+Where the subscript *i* indicates the component that corresponds to agent *i* only, *μ_i* is the policy for agent *i*, and *γ* is a discount factor. Q-values are then updated by minimising the mean-squared error between target and predicted Q-values.
 
-Where the subscript $i$ indicates the component that corresponds to agent $i$ only, $μ_i$ is the policy for agent $i$, and $\gamma$ is a discount factor. Q-values are then updated by minimising the mean-squared error between target and predicted Q-values.
+Each agent *i* individually measures the performance of its policy *μ_i* as follows:
 
-Each agent $i$ individually measures the performance of its policy $μ_i$ as follows:
-
-$$
-J_{μ_i} = Q(s_1,...,s_i,...,s_n, a_1,...,μ_i(s_i),...,a_n)
-$$
+<a href="https://www.codecogs.com/eqnedit.php?latex=J_{\mu_i}&space;=&space;Q(s_1,...,s_i,...,s_n,&space;a_1,...,\mu_i(s_i),...,a_n)" target="_blank"><img src="https://latex.codecogs.com/gif.latex?J_{\mu_i}&space;=&space;Q(s_1,...,s_i,...,s_n,&space;a_1,...,\mu_i(s_i),...,a_n)" title="J_{\mu_i} = Q(s_1,...,s_i,...,s_n, a_1,...,\mu_i(s_i),...,a_n)" /></a>
 
 Policies are updated by maximising this term.
 
