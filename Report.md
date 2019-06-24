@@ -1,6 +1,8 @@
 # Udacity Deep Reinforcement Learning Nanodegree
 # Project 3: Collaboration & Competition
 
+![Trained agents playing each other](https://github.com/chris838/tennis/blob/master/maddpg-tennis-trained-agents-playing.gif)
+
 This project attempts to solve the reinforcement learning test environment "Tennis", which simulates a simplified game of table tennis.
 
 In this environment, two agents control rackets to bounce a ball over a net. If an agent hits the ball over the net, it receives a reward of +0.1. If an agent lets a ball hit the ground or hits the ball out of bounds, it receives a reward of -0.01. Thus, the goal of each agent is to keep the ball in play.
