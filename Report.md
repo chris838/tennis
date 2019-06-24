@@ -92,10 +92,10 @@ A final suggestion would be to try using a technique such as batch-normalisation
 
 # Hyperparameters
 
-    | Hyper-parameter Name 	   | Value 	 |
+    | Hyper-parameter Name 	   | Value   |
     |--------------------------|---------|
-    | Adam learning rate  	   | 3e-4  	 |
-    | Discount (gamma)    	   | 0.99  	 |
+    | Adam learning rate  	   | 3e-4    |
+    | Discount (gamma)    	   | 0.99    |
     | Soft-update (tau)        | 0.01    |
     | Batch size               | 512     |
     | Max. episode length      | 2000    |
