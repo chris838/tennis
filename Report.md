@@ -2,6 +2,7 @@
 # Project 3: Collaboration & Competition
 
 ![Trained agents playing each other](https://github.com/chris838/tennis/blob/master/maddpg-tennis-trained-agents-playing.gif)
+*MADDPG agents playing Tennis after 10,450 training episodes*
 
 This project attempts to solve the reinforcement learning test environment "Tennis", which simulates a simplified game of table tennis.
 
