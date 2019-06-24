@@ -5,14 +5,14 @@ This project attempts to solve the reinforcement learning test environment "Tenn
 
 In this environment, two agents control rackets to bounce a ball over a net. If an agent hits the ball over the net, it receives a reward of +0.1. If an agent lets a ball hit the ground or hits the ball out of bounds, it receives a reward of -0.01. Thus, the goal of each agent is to keep the ball in play.
 
-The observation space consists of 8 variables corresponding to the position and velocity of the ball and racket. Each agent receives its own, local observation. Two continuous actions are available, corresponding to movement toward (or away from) the net, and jumping.
+The observation space consists of 8 variables corresponding to the position and velocity of the ball and racket. Each agent receives its own local observation. Two continuous actions are available, corresponding to movement toward (or away from) the net, and jumping.
 
-The task is episodic, and in order to solve the environment, the agents must get an average score of +0.5 (over 100 consecutive episodes, after taking the maximum over both agents).
+The task is episodic. In order to solve the environment the agents must get an average score of +0.5 (over 100 consecutive episodes, after taking the maximum over both agents).
 
 
 ## Learning Algorithm
 
-Since this environment requires an algorithm that can handle a continuous action space, we decided to use an approach based on DDPG ([Deep Deterministic Policy Gradients](https://arxiv.org/pdf/1509.02971.pdf)), which have been shown to work well across a variety of tasks with similar complexity.
+Since this environment requires an algorithm that can handle a continuous action space, we use an approach based on DDPG ([Deep Deterministic Policy Gradients](https://arxiv.org/pdf/1509.02971.pdf)), which has been shown to work well across a variety of tasks with similar complexity.
 
 However, this is also a multi-agent environment. If we were to train DDPG individually for each agent, we would likely run into problems. The training progress of each agent's opponent effectively violates the non-stationarity assumption that most reinforcement learning algorithms require. We therefore use an adaption of DDPG, MADDPG ([Multi-Agent DDPG](https://arxiv.org/pdf/1706.02275.pdf)), designed specifically for this scenario.
 
@@ -35,7 +35,7 @@ We use neural networks to represent both actor and critic and train them using A
 
 # Neural network architecture
 
-Both networks are distinct, yet share essentially the same architecture but with different outputs.
+Both networks are distinct, but they share essentially the same architecture only with different outputs.
 
 Below is the summary for the actor/policy network. On the hidden layers we use the `ReLU` activation function. On the outputs we use `tanh` to produce actions that are in the desired range -1 to 1.
 
@@ -77,9 +77,9 @@ As required, the agent is able to receive an average maximum reward (over 100 ep
 
 ## Ideas for Future Work
 
-The most difficult aspect of this project was finding the right hyperparameters that would provide good performance. Initially, we started with the parameters provided in the original MADDPG paper, but the proved to perform poorly. By reducing the learning rate and increasing the training frequency, as well as training for more episodes, we eventually found a working solution.
+The most difficult aspect of this project was finding the right hyperparameters that would provide good performance. Initially, we started with the parameters provided in the original MADDPG paper, but they performed poorly. By reducing the learning rate and increasing the training frequency, as well as training for more episodes, we eventually found a working solution.
 
-Given how long the algorithm takes to converge and how sensitive it is to certain parameters, it seems highly likely that significant improvement could be made by exploring different parameter settings. Exploring the search space would be time consuming, however, given that even our most successful training attempts showed no improvement until after several thousand episodes of seemingly degenerate behaviour.
+Given how long the algorithm takes to converge and how sensitive it is to certain hyperparameters, it seems highly likely that significant improvement could be made by exploring different hyperparameter settings. Exploring the search space would be time consuming, however, given that even our most successful training attempts showed no improvement until after several thousand episodes of seemingly degenerate behaviour.
 
 Therefore, it would seem prudent to find a method of assessing training progress that goes beyond just looking at cumulative reward and actor/critic loss, so that we can try and improve training efficiency without spending hours waiting for results. One example would be to look at gradient norms over time. Installing and configuring a utility like 'tensorboardX' would likely be the easiest way of doing this.
 
